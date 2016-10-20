@@ -14,10 +14,10 @@
   <script src="//cdn.bootcss.com/react/15.3.2/react-dom.min.js"></script>
 <link href="index.f30d0dcc6316de69c6a8.css?f30d0dcc6316de69c6a8" rel="stylesheet"></head>
 <body>
-<h1 id="react-visual-dom-diff-">React Visual DOM Diff算法解析</h1>
-<p>这篇文章是我用来分析React Visual DOM的行为的，加之自己对React的理解而成。</p>
+<h1 id="react-Virtual-dom-diff-">React Virtual DOM Diff算法解析</h1>
+<p>这篇文章是我用来分析React Virtual DOM的行为的，加之自己对React的理解而成。</p>
 <p><em>注：所有例子可以自行编辑尝试，组件名称只能是[A-Z]或[a-z]或[0-9]单个字符</em></p>
-<p>React开发之初，Facebook的开发人员认为，页面上同一个组件的变化，可以视作<strong>状态</strong>的变化，而状态的变化事实上是无关乎View的，于是每个组件其实可以视为一个<strong>状态机</strong>，为了管理这个状态变化，他们创造了Visual DOM，当两个状态需要比较时，他们使用Diff算法对两个DOM进行比较。</p>
+<p>React开发之初，Facebook的开发人员认为，页面上同一个组件的变化，可以视作<strong>状态</strong>的变化，而状态的变化事实上是无关乎View的，于是每个组件其实可以视为一个<strong>状态机</strong>，为了管理这个状态变化，他们创造了Virtual DOM，当两个状态需要比较时，他们使用Diff算法对两个DOM进行比较。</p>
 <p><a href="http://grfia.dlsi.ua.es/ml/algorithms/references/editsurvey_bille.pdf">纯粹的Diff算法</a>的时间复杂度为O(n^3)，显然是不行的，而React的开发者们却神奇地将这个算法提升至O(n)的时间复杂度，根据<a href="https://facebook.github.io/react/docs/reconciliation.html">官方文档</a>，他们将场景限定在了下面两个大前提中：</p>
 <ol>
 <li>两个相同组件产生类似的DOM结构，不同的组件产生不同的DOM结构；</li>
@@ -26,15 +26,15 @@
 <p>根据我的深入挖掘，我将更加细致地描述这两点，并加入第三点：</p>
 <ol>
 <li>两个相同组件产生类似的DOM结构，不同的组件产生不同的DOM结构；<ol>
-<li>React认为：通过同一个ReactComponet构造器产生的组件实例，将会产生类似的DOM结构，即使我们通过代码将实际产生的DOM编写地完全不同，它也认为它们相似，这两个Visual DOM的状态变化将被列入Diff算法中进行比较。</li>
+<li>React认为：通过同一个ReactComponet构造器产生的组件实例，将会产生类似的DOM结构，即使我们通过代码将实际产生的DOM编写地完全不同，它也认为它们相似，这两个Virtual DOM的状态变化将被列入Diff算法中进行比较。</li>
 <li>React认为：通过不同的ReactComponent构造器产生的组件实例，它们产生的DOM完全不相似，即使这两个组件的源代码完全一样，它也认为它们不同。这两者的状态变化将不被列入Diff算法中比较，直接销毁状态前的DOM再创建新的DOM。</li>
 <li>React通过比较组件构造器的指针，可以很方便的指出两个组件是否是相似的。</li>
 </ol>
 </li>
 <li>对于同一层次的一组子节点，它们可以通过唯一的id进行区分。<ol>
 <li>React采用全局刷新的思路，即无关乎状态前后的DOM是否有关系。</li>
-<li>React允许动态生成Visual DOM，但它指出，需要分配给每个Visual DOM一个ID，这个ID帮助它更有效率地操作DOM。</li>
-<li>若不给Visual DOM指定ID，则React认为状态改变前后所有的DOM都无关，并且将全部销毁所有DOM再创建新的DOM。</li>
+<li>React允许动态生成Virtual DOM，但它指出，需要分配给每个Virtual DOM一个ID，这个ID帮助它更有效率地操作DOM。</li>
+<li>若不给Virtual DOM指定ID，则React认为状态改变前后所有的DOM都无关，并且将全部销毁所有DOM再创建新的DOM。</li>
 </ol>
 </li>
 <li>React对待HTML元素和ReactComponent完全一致。</li>
@@ -150,7 +150,7 @@
 
 <p>这两个例子只不过为每个元素增加了Key，却大幅减少了DOM操作。</p>
 <h2 id="-">小结</h2>
-<p>本文通过几个例子来说明了React的diff算法是如何在Visual DOM中产生比较操作的，它解释了React如何一步步提升自己的性能，并有助于我们理解组件的生命周期，以及编写出高性能的React组件。</p>
+<p>本文通过几个例子来说明了React的diff算法是如何在Virtual DOM中产生比较操作的，它解释了React如何一步步提升自己的性能，并有助于我们理解组件的生命周期，以及编写出高性能的React组件。</p>
 
 <script src="vendors.f30d0dcc6316de69c6a8.js?f30d0dcc6316de69c6a8"></script><script src="index.bundle.f30d0dcc6316de69c6a8.js?f30d0dcc6316de69c6a8"></script></body>
 </html>
