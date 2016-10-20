@@ -53,7 +53,7 @@ export default class Example extends React.Component{
   }
   render() {
     return (
-      <div>
+      <div className="exampleborder">
         <div className="factory">
           <div className="inputarea">
             <textarea cols="30" rows="10" onChange={this.onFromDataChange.bind(this)} value={this.state.from}></textarea>

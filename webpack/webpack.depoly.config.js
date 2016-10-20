@@ -9,7 +9,7 @@ var config = {
   context: path.join(__dirname, '..', '/root/src'),
   entry: {
       index: './index/start',
-      vendors: ['react', 'react-dom', 'jquery']
+      vendors: ['react', 'react-dom']
   },
   output: {
       path: path.join(__dirname, '..', '/root/dist'),
@@ -70,7 +70,11 @@ var config = {
   resolve: {
     // 設定後只需要寫 require('file') 而不用寫成 require('file.jsx')
     extensions: ['', '.js', '.json', '.jsx']
-  }
+  },
+  externals: {
+    react: "React",
+    'react-dom': "ReactDOM"
+  },
 };
 
 module.exports = config;
