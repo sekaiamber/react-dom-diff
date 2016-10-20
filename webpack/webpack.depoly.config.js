@@ -9,7 +9,7 @@ var config = {
   context: path.join(__dirname, '..', '/root/src'),
   entry: {
       index: './index/start',
-      vendors: ['react', 'react-router', 'react-dom', 'jquery']
+      vendors: ['react', 'react-dom', 'jquery']
   },
   output: {
       path: path.join(__dirname, '..', '/root/dist'),
