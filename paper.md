@@ -1,10 +1,10 @@
-# React Visual DOM Diff算法解析
+# React Virtual DOM Diff算法解析
 
-这篇文章是我用来分析React Visual DOM的行为的，加之自己对React的理解而成。
+这篇文章是我用来分析React Virtual DOM的行为的，加之自己对React的理解而成。
 
 *注：所有例子可以自行编辑尝试，组件名称只能是[A-Z]或[a-z]或[0-9]单个字符*
 
-React开发之初，Facebook的开发人员认为，页面上同一个组件的变化，可以视作**状态**的变化，而状态的变化事实上是无关乎View的，于是每个组件其实可以视为一个**状态机**，为了管理这个状态变化，他们创造了Visual DOM，当两个状态需要比较时，他们使用Diff算法对两个DOM进行比较。
+React开发之初，Facebook的开发人员认为，页面上同一个组件的变化，可以视作**状态**的变化，而状态的变化事实上是无关乎View的，于是每个组件其实可以视为一个**状态机**，为了管理这个状态变化，他们创造了Virtual DOM，当两个状态需要比较时，他们使用Diff算法对两个DOM进行比较。
 
 [纯粹的Diff算法](http://grfia.dlsi.ua.es/ml/algorithms/references/editsurvey_bille.pdf)的时间复杂度为O(n^3)，显然是不行的，而React的开发者们却神奇地将这个算法提升至O(n)的时间复杂度，根据[官方文档](https://facebook.github.io/react/docs/reconciliation.html)，他们将场景限定在了下面两个大前提中：
 
@@ -14,13 +14,13 @@ React开发之初，Facebook的开发人员认为，页面上同一个组件的�
 根据我的深入挖掘，我将更加细致地描述这两点，并加入第三点：
 
 1. 两个相同组件产生类似的DOM结构，不同的组件产生不同的DOM结构；
-   1. React认为：通过同一个ReactComponet构造器产生的组件实例，将会产生类似的DOM结构，即使我们通过代码将实际产生的DOM编写地完全不同，它也认为它们相似，这两个Visual DOM的状态变化将被列入Diff算法中进行比较。
+   1. React认为：通过同一个ReactComponet构造器产生的组件实例，将会产生类似的DOM结构，即使我们通过代码将实际产生的DOM编写地完全不同，它也认为它们相似，这两个Virtual DOM的状态变化将被列入Diff算法中进行比较。
    2. React认为：通过不同的ReactComponent构造器产生的组件实例，它们产生的DOM完全不相似，即使这两个组件的源代码完全一样，它也认为它们不同。这两者的状态变化将不被列入Diff算法中比较，直接销毁状态前的DOM再创建新的DOM。
    3. React通过比较组件构造器的指针，可以很方便的指出两个组件是否是相似的。
 2. 对于同一层次的一组子节点，它们可以通过唯一的id进行区分。
    1. React采用全局刷新的思路，即无关乎状态前后的DOM是否有关系。
-   2. React允许动态生成Visual DOM，但它指出，需要分配给每个Visual DOM一个ID，这个ID帮助它更有效率地操作DOM。
-   3. 若不给Visual DOM指定ID，则React认为状态改变前后所有的DOM都无关，并且将全部销毁所有DOM再创建新的DOM。
+   2. React允许动态生成Virtual DOM，但它指出，需要分配给每个Virtual DOM一个ID，这个ID帮助它更有效率地操作DOM。
+   3. 若不给Virtual DOM指定ID，则React认为状态改变前后所有的DOM都无关，并且将全部销毁所有DOM再创建新的DOM。
 3. React对待HTML元素和ReactComponent完全一致。
 
 乍看一眼如此粗暴的大前提十分不靠谱，然而这却是整个React渲染机制的基础，事实也证明这两个假设在大部分场景下都十分准确合理。
@@ -159,4 +159,4 @@ React将逐个更新元素，并在末尾增加一个E，从而产生巨大的�
 
 ## 小结
 
-本文通过几个例子来说明了React的diff算法是如何在Visual DOM中产生比较操作的，它解释了React如何一步步提升自己的性能，并有助于我们理解组件的生命周期，以及编写出高性能的React组件。
+本文通过几个例子来说明了React的diff算法是如何在Virtual DOM中产生比较操作的，它解释了React如何一步步提升自己的性能，并有助于我们理解组件的生命周期，以及编写出高性能的React组件。
