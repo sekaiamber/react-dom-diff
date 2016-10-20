@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<!--[if lt IE 11]> <html class="ie"> <![endif]-->
+<!--[if (gt IE 10)|!(IE)]><!-->
+<html>
+<!--<![endif]-->
+<head lang="en">
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DOCUMENT</title>
+  <link href="//cdn.bootcss.com/normalize/3.0.3/normalize.min.css" rel="stylesheet">
+  <script src="//cdn.bootcss.com/babel-standalone/6.17.0/babel.min.js"></script>
+  <link href="//cdn.bootcss.com/bootstrap/4.0.0-alpha.4/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<h1 id="react-visual-dom-diff-">React Visual DOM Diff算法解析</h1>
+<p>这篇文章是我用来分析React Visual DOM的行为的，加之自己对React的理解而成。</p>
+<p><em>注：所有例子可以自行编辑尝试，组件名称只能是[A-Z]或[a-z]或[0-9]单个字符</em></p>
+<p>React开发之初，Facebook的开发人员认为，页面上同一个组件的变化，可以视作<strong>状态</strong>的变化，而状态的变化事实上是无关乎View的，于是每个组件其实可以视为一个<strong>状态机</strong>，为了管理这个状态变化，他们创造了Visual DOM，当两个状态需要比较时，他们使用Diff算法对两个DOM进行比较。</p>
+<p><a href="http://grfia.dlsi.ua.es/ml/algorithms/references/editsurvey_bille.pdf">纯粹的Diff算法</a>的时间复杂度为O(n^3)，显然是不行的，而React的开发者们却神奇地将这个算法提升至O(n)的时间复杂度，根据<a href="https://facebook.github.io/react/docs/reconciliation.html">官方文档</a>，他们将场景限定在了下面两个大前提中：</p>
+<ol>
+<li>两个相同组件产生类似的DOM结构，不同的组件产生不同的DOM结构；</li>
+<li>对于同一层次的一组子节点，它们可以通过唯一的id进行区分。</li>
+</ol>
+<p>根据我的深入挖掘，我将更加细致地描述这两点，并加入第三点：</p>
+<ol>
+<li>两个相同组件产生类似的DOM结构，不同的组件产生不同的DOM结构；<ol>
+<li>React认为：通过同一个ReactComponet构造器产生的组件实例，将会产生类似的DOM结构，即使我们通过代码将实际产生的DOM编写地完全不同，它也认为它们相似，这两个Visual DOM的状态变化将被列入Diff算法中进行比较。</li>
+<li>React认为：通过不同的ReactComponent构造器产生的组件实例，它们产生的DOM完全不相似，即使这两个组件的源代码完全一样，它也认为它们不同。这两者的状态变化将不被列入Diff算法中比较，直接销毁状态前的DOM再创建新的DOM。</li>
+<li>React通过比较组件构造器的指针，可以很方便的指出两个组件是否是相似的。</li>
+</ol>
+</li>
+<li>对于同一层次的一组子节点，它们可以通过唯一的id进行区分。<ol>
+<li>React采用全局刷新的思路，即无关乎状态前后的DOM是否有关系。</li>
+<li>React允许动态生成Visual DOM，但它指出，需要分配给每个Visual DOM一个ID，这个ID帮助它更有效率地操作DOM。</li>
+<li>若不给Visual DOM指定ID，则React认为状态改变前后所有的DOM都无关，并且将全部销毁所有DOM再创建新的DOM。</li>
+</ol>
+</li>
+<li>React对待HTML元素和ReactComponent完全一致。</li>
+</ol>
+<p>乍看一眼如此粗暴的大前提十分不靠谱，然而这却是整个React渲染机制的基础，事实也证明这两个假设在大部分场景下都十分准确合理。</p>
+<p>下面我将给出具体例子来说明上面的行为。</p>
+<h2 id="-">不同节点之间的状态比较</h2>
+<p>HTML节点之间的比较，无非两种情况：</p>
+<ol>
+<li>节点标签不同。比如<code class="prettyprint inline-code">&lt;div&gt;</code>和<code class="prettyprint inline-code">&lt;span&gt;</code>。</li>
+<li>节点标签相同，但属性不同。比如<code class="prettyprint inline-code">&lt;div class=&quot;a&quot;&gt;</code>和<code class="prettyprint inline-code">&lt;div class=&quot;b&quot;&gt;</code>。</li>
+</ol>
+<p>因为第二种情况事实上就是直接去更新元素本身，我们不讨论，我们只讨论第一种情况。</p>
+<p>第一个例子，我将一个<code class="prettyprint inline-code">&lt;div&gt;</code>元素替换为<code class="prettyprint inline-code">&lt;span&gt;</code>元素，从DOM上来看就是这样子：</p>
+<pre class="code-pre"><code class="lang-html prettyprint">&lt;R&gt;           &lt;R&gt;
+  &lt;div&gt;  --&gt;    &lt;span&gt;
+&lt;/R&gt;          &lt;/R&gt;
+</code></pre>
+<p>根据上面的前提<code class="prettyprint inline-code">1.2</code>，React直接认为<code class="prettyprint inline-code">span</code>跟<code class="prettyprint inline-code">div</code>不同，所以React直接删除了<code class="prettyprint inline-code">div</code>元素，并插入<code class="prettyprint inline-code">span</code>元素，具体步骤为：</p>
+<ol>
+<li>销毁div元素</li>
+<li>创建span结点</li>
+<li>将span渲染出来并插入到R结点下</li>
+<li>更新R结点</li>
+</ol>
+<p>同样，根据上面的前提<code class="prettyprint inline-code">3</code>，我们知道对于React来说，组件跟HTML元素完全一致，所以若情况变成下面这样：</p>
+<pre class="code-pre"><code class="lang-html prettyprint">&lt;R&gt;           &lt;R&gt;
+  &lt;A /&gt;  --&gt;    &lt;B /&gt;
+&lt;/R&gt;          &lt;/R&gt;
+</code></pre>
+<p>React的行为也如上面所诉，需要注意的是，正是因为上面的前提<code class="prettyprint inline-code">3</code>，使得React将<strong>彻底删除</strong>A组件下的所有DOM节点，举个例子，若上面的例子中的A和B都长这样：</p>
+<pre class="code-pre"><code class="lang-html prettyprint">&lt;div&gt;
+  &lt;h1&gt;header&lt;/h1&gt;
+  &lt;p&gt;Some text...&lt;/p&gt;
+&lt;/div&gt;
+</code></pre>
+<p>那么React还是认为它们不同，将直接删除整个A，而不是等B再去比较其中的<code class="prettyprint inline-code">h1</code>和<code class="prettyprint inline-code">p</code>。这样内部元素将不会用于后续比较，提高了比较效率。</p>
+<p>有些同学可能会问，上面那种情况下，直接全部删除再插入DOM难道不是一种性能损失么？事实上这种是极端情况。一般情况下两个不同的组件他们的内部元素相差巨大。</p>
+<p><em>实例1：点击Change查看</em></p>
+
+
+<div id="example1"></div>
+
+
+<h2 id="dom-">DOM元素整体迁移的困惑</h2>
+<p>假设我们有这样的例子：</p>
+<p>状态1：</p>
+<pre class="code-pre"><code class="lang-html prettyprint">&lt;R&gt;
+  &lt;A&gt;
+    &lt;B /&gt;
+    &lt;C /&gt;
+  &lt;/A&gt;
+  &lt;D /&gt;
+&lt;/R&gt;
+</code></pre>
+<p>状态2：</p>
+<pre class="code-pre"><code class="lang-html prettyprint">&lt;R&gt;
+  &lt;D&gt;
+    &lt;A&gt;
+      &lt;B /&gt;
+      &lt;C /&gt;
+    &lt;/A&gt;
+  &lt;/D&gt;
+&lt;/R&gt;
+</code></pre>
+<p>也即是说，我们将整个<code class="prettyprint inline-code">A</code>移动到了与它平级的<code class="prettyprint inline-code">D</code>下，正常情况下，我们习惯这么操作：</p>
+<ol>
+<li>从R节点移出A。</li>
+<li>将A移到D的下面。</li>
+</ol>
+<p>合情合理，有理有据。</p>
+<p>然而让我们看看React是怎么做的：</p>
+<p><em>实例2：点击Change查看</em></p>
+
+
+<div id="example2"></div>
+
+
+<p>事实证明，React是完全依据上述前提<code class="prettyprint inline-code">1.1</code>和前提<code class="prettyprint inline-code">1.2</code>来规划操作：</p>
+<ol>
+<li>因为状态1的A组件和状态2相同位置的D组件完全不同，所以依次销毁ABCD组件。</li>
+<li>根据DOM树结构，依次创建DABC结点。</li>
+<li>从子到父依次渲染BCAD结点。</li>
+<li>最后更新R元素。</li>
+</ol>
+<p>这体现了React又一个特性：<strong>逐层比较</strong>，下面是一张示意图：</p>
+<p><img src="http://cdn4.infoqstatic.com/statics_s2_20161011-0321/resource/articles/react-dom-diff/zh/resources/0909000.png" alt="逐层比较"></p>
+<p>也就是说，React只会比较同一个父结点下同样深度同样位置的子节点，对其运用上面3个大前提来做比较。</p>
+<h2 id="-key">神奇的KEY</h2>
+<p>对于上面实例2，很多同学又开始不满了：逐层比较我是明白了，但是D组件被无缘无故删除又创建，太浪费了！于是React开发人员加入了一个简单又神奇的Key属性，使得同层内部比较变得十分高效。</p>
+<p>举个例子：</p>
+<p><img src="http://cdn4.infoqstatic.com/statics_s2_20161011-0321/resource/articles/react-dom-diff/zh/resources/0909004.png" alt="key"></p>
+<p>我们要在ABCDE中插入F，如果React按照普通的做法，根据前提<code class="prettyprint inline-code">2.1</code>和前提<code class="prettyprint inline-code">2.3</code>，势必得出下面的操作：</p>
+<p><img src="http://cdn4.infoqstatic.com/statics_s2_20161011-0321/resource/articles/react-dom-diff/zh/resources/0909005.png" alt="key"></p>
+<p>React将逐个更新元素，并在末尾增加一个E，从而产生巨大的性能损失。</p>
+<p>而当设置了Key之后，React就会这样来操作：</p>
+<p><img src="http://cdn4.infoqstatic.com/statics_s2_20161011-0321/resource/articles/react-dom-diff/zh/resources/0909006.png" alt="key"></p>
+<p>所以，上述实例2可以修改为：</p>
+<p><em>实例3：点击Change查看</em></p>
+
+
+<div id="example3"></div>
+
+
+<p>这时你会发现React的行为产生了相应的变化。</p>
+<p>再给两个例子来更好的体会一下：</p>
+<p><em>实例4和实例5：点击Change查看</em></p>
+
+
+<div id="example4"></div>
+<div id="example5"></div>
+
+
+<p>这两个例子只不过为每个元素增加了Key，却大幅减少了DOM操作。</p>
+<h2 id="-">小结</h2>
+<p>本文通过几个例子来说明了React的diff算法是如何在Visual DOM中产生比较操作的，它解释了React如何一步步提升自己的性能，并有助于我们理解组件的生命周期，以及编写出高性能的React组件。</p>
+
+</body>
+</html>
