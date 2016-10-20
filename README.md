@@ -4,4 +4,4 @@
 
 *注：所有例子可以自行编辑尝试，组件名称只能是[A-Z]或[a-z]或[0-9]单个字符*
 
-点击查看
+[点击查看](https://sekaiamber.github.io/react-dom-diff/)
